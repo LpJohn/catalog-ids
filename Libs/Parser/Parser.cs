@@ -1,13 +1,11 @@
 ﻿using System;
+using System.Configuration;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Parser;
-
-// TODO: need ignores list
-// TODO: need to handle multiple masks
 
 namespace ParserLib
 {
@@ -20,7 +18,6 @@ namespace ParserLib
             foreach (Match match in matches)
             {
                 idList.Add(match.Groups[match.Groups.Count - 1].Value);
-                Console.WriteLine(match.Groups[match.Groups.Count - 1].Value);
             }
             return idList;
         }
@@ -28,27 +25,29 @@ namespace ParserLib
         private string _outputFileName;
         private string[] _masks;
 
-        public void OutputIdCatalogByFolder(string folderPath, string masks)
+        public void OutputIdCatalogByFolder(string inputFolderPath, string outputFolderPath, string masks)
         {
-            _outputFileName = Path.Combine(folderPath, "id-catalog.json");
+            var ignoreFile = ConfigurationManager.AppSettings["IgnoreFile"];
+            _outputFileName = Path.Combine(outputFolderPath, "id-catalog.json");
             _masks = masks.Split(",".ToCharArray());
-            ProcessFolder(folderPath);
+            var ignoredFiles = File.ReadAllLines(ignoreFile);
+            ProcessFolder(inputFolderPath, ignoredFiles);
         }
 
-        private void ProcessFolder(string folderPath)
+        private void ProcessFolder(string inputFolderPath, string[] ignoredFiles)
         {
             var list = new List<ListModel>();
-            var files = _masks.SelectMany(mask => Directory.GetFiles(folderPath, mask)).ToArray();
+            var files = _masks.SelectMany(mask => Directory.GetFiles(inputFolderPath, mask)).ToArray();
             foreach (var file in files)
             {
-                Console.WriteLine("****" + file + "****");
+                if (ignoredFiles.Any(f => file.EndsWith(f)))
+                    continue;
                 var fileLines = File.ReadAllLines(file);
                 var idList = new List<string>();
                 foreach (var line in fileLines)
                 {
                     idList.AddRange(GetIds(line));
                 }
-                idList.ForEach(Console.WriteLine);
                 if (idList.Any())
                 {
                     list.Add(new ListModel {FileName = file, IdList = idList});
@@ -62,9 +61,9 @@ namespace ParserLib
                 File.WriteAllText(_outputFileName, json);
             }
 
-            var directories = Directory.GetDirectories(folderPath);
+            var directories = Directory.GetDirectories(inputFolderPath);
             foreach (var directory in directories)
-                ProcessFolder(directory);
+                ProcessFolder(directory, ignoredFiles);
         }
 
         private void GetPreviousFiles(List<ListModel> list)

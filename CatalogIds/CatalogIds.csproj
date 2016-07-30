@@ -47,6 +47,15 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\ignore.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\Parser\ParserLib.csproj">
+      <Project>{86d4c4f1-e5a7-4c3c-be77-30e5803fdf46}</Project>
+      <Name>ParserLib</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
